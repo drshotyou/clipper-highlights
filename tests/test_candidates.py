@@ -28,3 +28,35 @@ def test_candidate_generation_merges_audio_and_keywords():
     assert candidate.end >= 13.5
     assert candidate.score > 5.0
     assert "Audio and transcript evidence aligned in time" in candidate.reasons
+
+
+def test_candidate_generation_counts_repeated_keyword_hits():
+    config = CandidateConfig(
+        keywords={"shoot": 1.5},
+        keyword_event_weight=2.0,
+        min_candidate_score=0.5,
+    )
+    transcript = [
+        TranscriptSegment(start=20.0, end=21.0, text="shoot shoot"),
+    ]
+
+    candidates = generate_candidate_windows(transcript, [], config)
+
+    assert len(candidates) == 1
+    assert candidates[0].score == 6.0
+    assert candidates[0].reasons == ["Transcript keywords: shoot"]
+
+
+def test_candidate_generation_filters_low_score_windows():
+    config = CandidateConfig(
+        keywords={"noise": 0.1},
+        keyword_event_weight=1.0,
+        min_candidate_score=1.0,
+    )
+    transcript = [
+        TranscriptSegment(start=5.0, end=6.0, text="noise"),
+    ]
+
+    candidates = generate_candidate_windows(transcript, [], config)
+
+    assert candidates == []

@@ -47,6 +47,151 @@ source .venv/bin/activate
 pip install -e .[dev]
 ```
 
+## Usage Guide
+
+The project exposes two commands:
+
+- `clipper-highlights init-config <path>` to generate a starter YAML config
+- `clipper-highlights run <video>` to process a recording and export clips
+
+The shortest local workflow is:
+
+```bash
+cd ~/github/personal/clipper-highlights
+source .venv/bin/activate
+clipper-highlights init-config config.yaml
+clipper-highlights run /path/to/session.mp4 --config config.yaml --output-dir runs/session-01
+```
+
+If you do not want to install the package into the current shell, this also works from the repo root:
+
+```bash
+PYTHONPATH=src python3 -m clipper_highlights init-config config.yaml
+PYTHONPATH=src python3 -m clipper_highlights run /path/to/session.mp4 --config config.yaml
+```
+
+## Setup Steps
+
+### 1. Generate a config file
+
+Create a starter config:
+
+```bash
+clipper-highlights init-config config.yaml
+```
+
+That config controls:
+
+- the Whisper model and transcription settings
+- adaptive audio detection thresholds
+- transcript keywords and weights
+- Gemini ranking behavior
+- export codec settings
+
+### 2. Tune the config for the target game
+
+The first fields worth editing are:
+
+- `transcription.hotwords`: game names, map names, weapon names, teammate names
+- `candidate.keywords`: phrases that usually indicate a fight, clutch, reaction, or payoff moment
+- `llm.provider`: set to `none` for deterministic-only ranking or `gemini` for semantic reranking
+
+For example, for Tarkov you would usually want terms like `pmc`, `scav`, `extract`, and common squad callouts.
+
+### 3. Run the pipeline
+
+Basic local run:
+
+```bash
+clipper-highlights run /path/to/session.mp4 \
+  --config config.yaml \
+  --game tarkov \
+  --output-dir runs/tarkov-session-01
+```
+
+If `--output-dir` is omitted, the default is:
+
+```text
+runs/<input-video-stem>
+```
+
+### 4. Review the generated artifacts
+
+Each run writes intermediate files as well as final clips, which makes debugging easier:
+
+- `artifacts/audio.wav`
+- `artifacts/transcript.json`
+- `artifacts/audio_spikes.json`
+- `artifacts/timeline_bundle.json`
+- `artifacts/ranked_clips.json`
+- `clips/*.mp4`
+
+The two most useful debugging artifacts are:
+
+- `timeline_bundle.json` to inspect merged transcript/audio evidence and candidate windows
+- `ranked_clips.json` to inspect the final chosen windows before or after export
+
+## Common Run Variants
+
+Run without Gemini:
+
+```bash
+clipper-highlights run /path/to/session.mp4 \
+  --config config.yaml \
+  --no-llm
+```
+
+Generate artifacts only and skip clip export:
+
+```bash
+clipper-highlights run /path/to/session.mp4 \
+  --config config.yaml \
+  --no-export
+```
+
+Force recomputation of cached artifacts:
+
+```bash
+clipper-highlights run /path/to/session.mp4 \
+  --config config.yaml \
+  --force
+```
+
+Temporarily add keyword overrides without editing the YAML file:
+
+```bash
+clipper-highlights run /path/to/session.mp4 \
+  --config config.yaml \
+  --keyword "pmc=3.0" \
+  --keyword "one shot=2.0"
+```
+
+## Recommended First Run
+
+If you are giving this to someone else, the most reliable first-run path is:
+
+1. Generate `config.yaml`.
+2. Set `llm.provider` to `none`.
+3. Run one short recording first, not a huge full-session archive.
+4. Inspect `artifacts/timeline_bundle.json`.
+5. Tune `transcription.hotwords` and `candidate.keywords`.
+6. Re-run with `--force`.
+7. Enable Gemini only after the deterministic candidate windows already look reasonable.
+
+## Justfile
+
+If you use `just`, the repo includes shortcuts for the common local and Docker workflows:
+
+```bash
+just
+just test
+just build
+just init-config
+just cli run /path/to/session.mp4 --config config.yaml --no-llm
+just docker init-config /workspace/config.yaml
+just docker run /data/session.mp4 --config /workspace/config.yaml --output-dir /workspace/runs/session-01
+```
+
 ## Docker
 
 The repo includes a CPU-first Docker setup with `ffmpeg` and persistent model caches.
@@ -107,42 +252,6 @@ Notes:
 - The default container setup runs on CPU.
 - Whisper model downloads are cached in the named `clipper-cache` volume.
 - The compose service mounts the repo into `/workspace`, so local code changes are visible without rebuilding the image unless dependencies change.
-
-## Quick start
-
-Create a starter config:
-
-```bash
-clipper-highlights init-config config.yaml
-```
-
-Run the full pipeline:
-
-```bash
-clipper-highlights run /path/to/session.mp4 \
-  --config config.yaml \
-  --game tarkov \
-  --output-dir runs/tarkov-session-01
-```
-
-If you want deterministic ranking only:
-
-```bash
-clipper-highlights run /path/to/session.mp4 \
-  --config config.yaml \
-  --no-llm
-```
-
-## Output
-
-Each run writes:
-
-- `artifacts/audio.wav`
-- `artifacts/transcript.json`
-- `artifacts/audio_spikes.json`
-- `artifacts/timeline_bundle.json`
-- `artifacts/ranked_clips.json`
-- `clips/*.mp4`
 
 ## Gemini support
 
