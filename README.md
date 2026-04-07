@@ -236,6 +236,7 @@ Then edit `.env` if needed:
 - leave `CLIPPER_MEDIA_DIR=./data` if your videos will live inside the repo’s `data/` folder
 - set `CLIPPER_MEDIA_DIR` to another host directory if your recordings live elsewhere
 - set `GEMINI_API_KEY` if you want Gemini reranking
+- set `OPENAI_API_KEY` if you want OpenAI reranking
 
 Build the image:
 
@@ -306,15 +307,51 @@ Notes:
 - The compose service mounts the repo into `/workspace`, so local code changes are visible without rebuilding the image unless dependencies change.
 - The long-form bind mount syntax in `compose.yaml` is used to avoid Windows drive-letter parsing problems.
 
-## Gemini support
+## LLM Provider Setup
 
-Set a Gemini API key if you want semantic ranking:
+The project supports these ranking modes:
+
+- `none`: deterministic heuristic ranking only
+- `gemini`: Google Gemini JSON ranking
+- `openai`: OpenAI Responses API JSON ranking
+
+### Gemini
+
+Set a Gemini API key if you want Gemini ranking:
 
 ```bash
 export GEMINI_API_KEY=your_key_here
 ```
 
-The LLM stage receives a compact JSON summary of top candidate windows and must return JSON only. If Gemini fails or no API key is present, the pipeline falls back to heuristic ranking.
+Example config:
+
+```yaml
+llm:
+  provider: gemini
+  model: gemini-2.5-flash
+  api_key_env: GEMINI_API_KEY
+```
+
+### OpenAI
+
+Set an OpenAI API key if you want OpenAI ranking:
+
+```bash
+export OPENAI_API_KEY=your_key_here
+```
+
+Example config:
+
+```yaml
+llm:
+  provider: openai
+  model: gpt-4o-mini
+  api_key_env: OPENAI_API_KEY
+```
+
+The OpenAI integration uses the Responses API with Structured Outputs so the ranker returns schema-validated JSON rather than free-form text. Source: [OpenAI Structured Outputs guide](https://developers.openai.com/api/docs/guides/structured-outputs)
+
+If Gemini or OpenAI fails, or no API key is present, the pipeline falls back to heuristic ranking.
 
 ## Tuning ideas
 

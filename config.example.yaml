@@ -35,3 +35,7 @@ llm:
   api_key_env: GEMINI_API_KEY
   top_candidate_windows: 15
   max_output_clips: 8
+  # OpenAI example:
+  # provider: openai
+  # model: gpt-4o-mini
+  # api_key_env: OPENAI_API_KEY

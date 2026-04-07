@@ -61,8 +61,11 @@ class CandidateConfig(BaseModel):
 
 class LLMConfig(BaseModel):
     provider: str = "none"
-    model: str = "gemini-2.5-flash"
-    api_key_env: str = "GEMINI_API_KEY"
+    model: str | None = None
+    api_key_env: str | None = None
+    base_url: str | None = None
+    organization: str | None = None
+    project: str | None = None
     temperature: float = 0.1
     top_candidate_windows: int = 15
     max_output_clips: int = 8
