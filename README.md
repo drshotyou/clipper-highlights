@@ -47,6 +47,67 @@ source .venv/bin/activate
 pip install -e .[dev]
 ```
 
+## Docker
+
+The repo includes a CPU-first Docker setup with `ffmpeg` and persistent model caches.
+
+Build the image:
+
+```bash
+cd ~/github/personal/clipper-highlights
+docker compose build
+```
+
+Create a starter config through the container:
+
+```bash
+docker compose run --rm clipper-highlights init-config /workspace/config.yaml
+```
+
+Run the pipeline with media mounted at `/data`:
+
+```bash
+mkdir -p data runs
+cp /path/to/session.mp4 data/
+
+docker compose run --rm \
+  -e GEMINI_API_KEY="$GEMINI_API_KEY" \
+  clipper-highlights run /data/session.mp4 \
+  --config /workspace/config.yaml \
+  --game tarkov \
+  --output-dir /workspace/runs/tarkov-session-01
+```
+
+If your recordings live outside the repo, point `CLIPPER_MEDIA_DIR` at that directory:
+
+```bash
+CLIPPER_MEDIA_DIR=/absolute/path/to/recordings docker compose run --rm \
+  clipper-highlights run /data/session.mp4 \
+  --config /workspace/config.yaml \
+  --output-dir /workspace/runs/session-01
+```
+
+You can also use plain `docker run`:
+
+```bash
+docker build -t clipper-highlights .
+
+docker run --rm \
+  -v "$PWD:/workspace" \
+  -v /absolute/path/to/recordings:/data \
+  -v clipper-highlights-cache:/cache \
+  -e GEMINI_API_KEY="$GEMINI_API_KEY" \
+  clipper-highlights run /data/session.mp4 \
+  --config /workspace/config.yaml \
+  --output-dir /workspace/runs/session-01
+```
+
+Notes:
+
+- The default container setup runs on CPU.
+- Whisper model downloads are cached in the named `clipper-cache` volume.
+- The compose service mounts the repo into `/workspace`, so local code changes are visible without rebuilding the image unless dependencies change.
+
 ## Quick start
 
 Create a starter config:

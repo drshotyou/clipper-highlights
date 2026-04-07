@@ -1,0 +1,20 @@
+services:
+  clipper-highlights:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: clipper-highlights:local
+    working_dir: /workspace
+    environment:
+      GEMINI_API_KEY: ${GEMINI_API_KEY:-}
+      HF_HOME: /cache/huggingface
+      XDG_CACHE_HOME: /cache
+      PYTHONPATH: /workspace/src
+    volumes:
+      - .:/workspace
+      - ${CLIPPER_MEDIA_DIR:-./data}:/data
+      - clipper-cache:/cache
+    command: ["--help"]
+
+volumes:
+  clipper-cache:
