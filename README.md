@@ -187,10 +187,12 @@ If you use `just`, the repo includes shortcuts for the common local and Docker w
 just
 just test
 just build
+just build-gpu
 just init-config
 just cli run /path/to/session.mp4 --config config.yaml --no-llm
 just docker init-config /workspace/config.yaml
 just docker run /data/session.mp4 --config /workspace/config.yaml --output-dir /workspace/runs/session-01
+just docker-gpu run /data/session.mp4 --config /workspace/config.yaml --output-dir /workspace/runs/session-01
 ```
 
 ## Docker
@@ -208,6 +210,7 @@ For Windows users:
 - use Docker Desktop, not a native Python install, if you want the simplest path
 - use the provided `.env` file instead of inline environment-variable syntax
 - if you set `CLIPPER_MEDIA_DIR` to an absolute Windows path, use forward slashes like `C:/Users/you/Videos/recordings`
+- GPU support in Docker Desktop is only available on Windows with the WSL2 backend and an NVIDIA GPU with up-to-date WSL2-compatible drivers. Source: [Docker GPU support on Windows](https://docs.docker.com/desktop/features/gpu/)
 
 ### First-Time Docker Setup
 
@@ -238,6 +241,8 @@ Then edit `.env` if needed:
 - set `GEMINI_API_KEY` if you want Gemini reranking
 - set `OPENAI_API_KEY` if you want OpenAI reranking
 
+### CPU Docker Run
+
 Build the image:
 
 ```bash
@@ -264,6 +269,51 @@ docker compose run --rm \
   --game tarkov \
   --output-dir /workspace/runs/tarkov-session-01
 ```
+
+### GPU Docker Run
+
+There are two separate Docker images in this repo:
+
+- `Dockerfile` for CPU
+- `Dockerfile.gpu` for NVIDIA GPU
+
+The GPU path is specifically for `faster-whisper`. Audio feature extraction with `librosa` is still CPU-bound, and ffmpeg export remains CPU-based by default.
+
+Build the GPU image:
+
+```bash
+docker compose -f compose.yaml -f compose.gpu.yaml build
+```
+
+Run with the GPU override:
+
+```bash
+docker compose -f compose.yaml -f compose.gpu.yaml run --rm clipper-highlights run /data/session.mp4 \
+  --config /workspace/config.yaml \
+  --game tarkov \
+  --output-dir /workspace/runs/tarkov-session-01
+```
+
+Recommended config for GPU transcription:
+
+```yaml
+transcription:
+  device: auto
+  compute_type: int8_float16
+```
+
+If GPU detection is working, the startup logs should now show:
+
+```text
+Loading Whisper model 'medium.en' on device 'cuda'
+```
+
+If it still says `cpu`, check:
+
+1. Docker Desktop GPU support is enabled and working on the host.
+2. `docker run --rm --gpus=all nvcr.io/nvidia/k8s/cuda-sample:nbody nbody -gpu -benchmark` works on the machine. Source: [Docker GPU support on Windows](https://docs.docker.com/desktop/features/gpu/)
+3. You used the GPU compose override or the GPU Dockerfile, not the default CPU image.
+4. `transcription.device` is `auto` or `cuda`, not `cpu`.
 
 If your recordings live outside the repo, update `.env` instead of using shell-specific inline syntax:
 

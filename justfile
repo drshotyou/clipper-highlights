@@ -7,6 +7,9 @@ default:
 build:
     docker compose build
 
+build-gpu:
+    docker compose -f compose.yaml -f compose.gpu.yaml build
+
 test:
     pytest -q tests
 
@@ -20,6 +23,9 @@ cli *args:
 
 docker *args:
     docker compose run --rm clipper-highlights {{args}}
+
+docker-gpu *args:
+    docker compose -f compose.yaml -f compose.gpu.yaml run --rm clipper-highlights {{args}}
 
 init-config destination="config.yaml":
     PYTHONPATH=src python -m clipper_highlights init-config {{destination}}

@@ -1,0 +1,7 @@
+services:
+  clipper-highlights:
+    build:
+      context: .
+      dockerfile: Dockerfile.gpu
+    image: clipper-highlights:gpu
+    gpus: all

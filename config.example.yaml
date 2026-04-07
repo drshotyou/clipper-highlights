@@ -39,3 +39,8 @@ llm:
   # provider: openai
   # model: gpt-4o-mini
   # api_key_env: OPENAI_API_KEY
+
+# GPU notes:
+# - For Docker GPU runs, use compose.gpu.yaml and keep transcription.device=auto
+#   or set transcription.device=cuda explicitly.
+# - int8_float16 is a good default for NVIDIA GPUs with faster-whisper.

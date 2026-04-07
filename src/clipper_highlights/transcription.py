@@ -82,11 +82,11 @@ def _resolve_device(requested: str) -> str:
         return requested
 
     try:
-        import torch
+        import ctranslate2
 
-        if torch.cuda.is_available():
+        if ctranslate2.get_cuda_device_count() > 0:
             return "cuda"
-    except ImportError:
+    except Exception:
         pass
 
     return "cpu"
