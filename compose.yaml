@@ -11,9 +11,15 @@ services:
       XDG_CACHE_HOME: /cache
       PYTHONPATH: /workspace/src
     volumes:
-      - .:/workspace
-      - ${CLIPPER_MEDIA_DIR:-./data}:/data
-      - clipper-cache:/cache
+      - type: bind
+        source: .
+        target: /workspace
+      - type: bind
+        source: ${CLIPPER_MEDIA_DIR:-./data}
+        target: /data
+      - type: volume
+        source: clipper-cache
+        target: /cache
     command: ["--help"]
 
 volumes:

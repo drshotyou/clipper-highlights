@@ -41,7 +41,8 @@ src/clipper_highlights/
 ## Install
 
 ```bash
-cd ~/github/personal/clipper-highlights
+git clone https://github.com/drshotyou/clipper-highlights.git
+cd clipper-highlights
 python3 -m venv .venv
 source .venv/bin/activate
 pip install -e .[dev]
@@ -57,7 +58,7 @@ The project exposes two commands:
 The shortest local workflow is:
 
 ```bash
-cd ~/github/personal/clipper-highlights
+cd clipper-highlights
 source .venv/bin/activate
 clipper-highlights init-config config.yaml
 clipper-highlights run /path/to/session.mp4 --config config.yaml --output-dir runs/session-01
@@ -196,10 +197,50 @@ just docker run /data/session.mp4 --config /workspace/config.yaml --output-dir /
 
 The repo includes a CPU-first Docker setup with `ffmpeg` and persistent model caches.
 
+### Platform Notes
+
+The Docker setup is intended to work on Linux, macOS, and Windows with Docker Desktop.
+
+The container itself is Linux-based, but that is fine on Windows because Docker Desktop runs Linux containers.
+
+For Windows users:
+
+- use Docker Desktop, not a native Python install, if you want the simplest path
+- use the provided `.env` file instead of inline environment-variable syntax
+- if you set `CLIPPER_MEDIA_DIR` to an absolute Windows path, use forward slashes like `C:/Users/you/Videos/recordings`
+
+### First-Time Docker Setup
+
+Copy the example environment file:
+
+Linux/macOS:
+
+```bash
+cp .env.example .env
+```
+
+PowerShell:
+
+```powershell
+Copy-Item .env.example .env
+```
+
+CMD:
+
+```cmd
+copy .env.example .env
+```
+
+Then edit `.env` if needed:
+
+- leave `CLIPPER_MEDIA_DIR=./data` if your videos will live inside the repo’s `data/` folder
+- set `CLIPPER_MEDIA_DIR` to another host directory if your recordings live elsewhere
+- set `GEMINI_API_KEY` if you want Gemini reranking
+
 Build the image:
 
 ```bash
-cd ~/github/personal/clipper-highlights
+cd clipper-highlights
 docker compose build
 ```
 
@@ -223,11 +264,22 @@ docker compose run --rm \
   --output-dir /workspace/runs/tarkov-session-01
 ```
 
-If your recordings live outside the repo, point `CLIPPER_MEDIA_DIR` at that directory:
+If your recordings live outside the repo, update `.env` instead of using shell-specific inline syntax:
+
+```env
+CLIPPER_MEDIA_DIR=/absolute/path/to/recordings
+```
+
+Windows example:
+
+```env
+CLIPPER_MEDIA_DIR=C:/Users/you/Videos/recordings
+```
+
+Then run the same Docker command:
 
 ```bash
-CLIPPER_MEDIA_DIR=/absolute/path/to/recordings docker compose run --rm \
-  clipper-highlights run /data/session.mp4 \
+docker compose run --rm clipper-highlights run /data/session.mp4 \
   --config /workspace/config.yaml \
   --output-dir /workspace/runs/session-01
 ```
@@ -238,7 +290,7 @@ You can also use plain `docker run`:
 docker build -t clipper-highlights .
 
 docker run --rm \
-  -v "$PWD:/workspace" \
+  -v /absolute/path/to/clipper-highlights:/workspace \
   -v /absolute/path/to/recordings:/data \
   -v clipper-highlights-cache:/cache \
   -e GEMINI_API_KEY="$GEMINI_API_KEY" \
@@ -252,6 +304,7 @@ Notes:
 - The default container setup runs on CPU.
 - Whisper model downloads are cached in the named `clipper-cache` volume.
 - The compose service mounts the repo into `/workspace`, so local code changes are visible without rebuilding the image unless dependencies change.
+- The long-form bind mount syntax in `compose.yaml` is used to avoid Windows drive-letter parsing problems.
 
 ## Gemini support
 
