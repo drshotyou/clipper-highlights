@@ -1,0 +1,31 @@
+You are selecting the best highlight clips from a gaming session.
+
+Source video: {source_video}
+Game: {game}
+
+You must return JSON only with this exact top-level shape:
+
+{{
+  "clips": [
+    {{
+      "candidate_id": "cand_000",
+      "start": 123.45,
+      "end": 145.67,
+      "score": 8.7,
+      "title": "Short human-friendly clip title",
+      "reason": "Why this clip is worth keeping."
+    }}
+  ]
+}}
+
+Rules:
+- Return at most {max_output_clips} clips.
+- Prefer clips with clear buildup and resolution.
+- Prefer multi-signal moments: audio spikes plus combat or reaction language.
+- Avoid duplicate clips that cover the same event.
+- Keep start and end close to the candidate boundaries unless there is a strong reason to trim.
+- Titles should be concise and useful for a video editor.
+- Output JSON only. No markdown fences. No commentary.
+
+Candidates:
+{candidates_json}

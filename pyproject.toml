@@ -1,0 +1,40 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "clipper-highlights"
+version = "0.1.0"
+description = "Gaming highlight extraction pipeline using ASR, audio features, heuristics, and optional LLM ranking."
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+  "faster-whisper>=1.0.3",
+  "librosa>=0.10.2",
+  "numpy>=1.26.4",
+  "pydantic>=2.7.4",
+  "PyYAML>=6.0.2",
+  "requests>=2.32.3",
+  "rich>=13.9.4",
+  "typer>=0.15.1",
+]
+
+[project.optional-dependencies]
+dev = [
+  "pytest>=8.3.4",
+]
+
+[project.scripts]
+clipper-highlights = "clipper_highlights.cli:app"
+
+[tool.setuptools]
+package-dir = {"" = "src"}
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+"clipper_highlights.prompts" = ["*.txt"]
+
+[tool.pytest.ini_options]
+pythonpath = ["src"]

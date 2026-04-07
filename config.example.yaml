@@ -1,0 +1,37 @@
+transcription:
+  model: medium.en
+  device: auto
+  compute_type: int8_float16
+  hotwords:
+    - pmc
+    - scav
+    - extract
+    - one shot
+    - i'm down
+
+audio:
+  sample_rate: 16000
+  min_dbfs: -42.0
+  combined_threshold: 2.3
+
+candidate:
+  keywords:
+    shoot: 1.5
+    shooting: 1.5
+    pmc: 2.0
+    scav: 1.0
+    i'm down: 2.5
+    one shot: 2.0
+    cracked: 1.0
+    knocked: 1.0
+    clutch: 2.0
+    dead: 1.2
+    team wipe: 2.5
+    no way: 0.8
+
+llm:
+  provider: gemini
+  model: gemini-2.5-flash
+  api_key_env: GEMINI_API_KEY
+  top_candidate_windows: 15
+  max_output_clips: 8
