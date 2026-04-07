@@ -9,11 +9,51 @@ from clipper_highlights.models import AudioSpike
 
 def extract_audio(video_path: Path, output_path: Path, config: AudioConfig) -> Path:
     output_path.parent.mkdir(parents=True, exist_ok=True)
-    command = [
+    command = _build_extract_audio_command(video_path, output_path, config)
+
+    result = subprocess.run(command, capture_output=True, text=True)
+    if result.returncode != 0:
+        raise RuntimeError(f"ffmpeg audio extraction failed:\n{result.stderr}")
+    return output_path
+
+
+def _build_extract_audio_command(video_path: Path, output_path: Path, config: AudioConfig) -> list[str]:
+    base_command = [
         "ffmpeg",
         "-y",
         "-i",
         str(video_path),
+    ]
+
+    if not config.stream_indices:
+        return base_command + [
+            "-vn",
+            "-ac",
+            "1",
+            "-ar",
+            str(config.sample_rate),
+            str(output_path),
+        ]
+
+    if len(config.stream_indices) == 1:
+        return base_command + [
+            "-map",
+            f"0:a:{config.stream_indices[0]}",
+            "-vn",
+            "-ac",
+            "1",
+            "-ar",
+            str(config.sample_rate),
+            str(output_path),
+        ]
+
+    inputs = "".join(f"[0:a:{index}]" for index in config.stream_indices)
+    filter_graph = f"{inputs}amix=inputs={len(config.stream_indices)}:normalize=0[aout]"
+    return base_command + [
+        "-filter_complex",
+        filter_graph,
+        "-map",
+        "[aout]",
         "-vn",
         "-ac",
         "1",
@@ -21,11 +61,6 @@ def extract_audio(video_path: Path, output_path: Path, config: AudioConfig) -> P
         str(config.sample_rate),
         str(output_path),
     ]
-
-    result = subprocess.run(command, capture_output=True, text=True)
-    if result.returncode != 0:
-        raise RuntimeError(f"ffmpeg audio extraction failed:\n{result.stderr}")
-    return output_path
 
 
 def analyze_audio(audio_path: Path, config: AudioConfig) -> list[AudioSpike]:

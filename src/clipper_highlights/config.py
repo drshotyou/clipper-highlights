@@ -23,6 +23,7 @@ DEFAULT_KEYWORDS = {
 
 class AudioConfig(BaseModel):
     sample_rate: int = 16000
+    stream_indices: list[int] = Field(default_factory=list)
     frame_length: int = 2048
     hop_length: int = 512
     min_dbfs: float = -45.0

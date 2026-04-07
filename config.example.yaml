@@ -11,6 +11,9 @@ transcription:
 
 audio:
   sample_rate: 16000
+  # OBS multitrack example:
+  # 0 = Discord, 1 = game, 2 = mic
+  # stream_indices: [1, 2]
   min_dbfs: -42.0
   combined_threshold: 2.3
 

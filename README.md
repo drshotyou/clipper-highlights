@@ -132,6 +132,36 @@ The two most useful debugging artifacts are:
 - `timeline_bundle.json` to inspect merged transcript/audio evidence and candidate windows
 - `ranked_clips.json` to inspect the final chosen windows before or after export
 
+## Multitrack Audio
+
+If your recording contains multiple audio streams, the pipeline can now select specific stream indices instead of blindly taking the first audio track.
+
+Example OBS-style layout:
+
+- stream `0`: Discord
+- stream `1`: game audio
+- stream `2`: mic
+
+If you want to exclude Discord and use only game + mic, set:
+
+```yaml
+audio:
+  stream_indices: [1, 2]
+```
+
+If you want to analyze just one track, use a single index:
+
+```yaml
+audio:
+  stream_indices: [2]
+```
+
+Behavior:
+
+- no `stream_indices`: ffmpeg picks the default audio stream
+- one stream index: that specific stream is extracted
+- multiple stream indices: those streams are mixed together before transcription and audio analysis
+
 ## Common Run Variants
 
 Run without Gemini:

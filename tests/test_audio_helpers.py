@@ -1,6 +1,9 @@
 import numpy as np
 
-from clipper_highlights.audio import _match_length, _merge_nearby_spikes, _robust_zscore
+from pathlib import Path
+
+from clipper_highlights.audio import _build_extract_audio_command, _match_length, _merge_nearby_spikes, _robust_zscore
+from clipper_highlights.config import AudioConfig
 from clipper_highlights.models import AudioSpike
 
 
@@ -36,3 +39,72 @@ def test_robust_zscore_handles_constant_values():
     scores = _robust_zscore(values)
 
     assert scores.tolist() == [0.0, 0.0, 0.0]
+
+
+def test_build_extract_audio_command_defaults_to_ffmpeg_selected_stream():
+    command = _build_extract_audio_command(
+        Path("session.mkv"),
+        Path("audio.wav"),
+        AudioConfig(sample_rate=16000),
+    )
+
+    assert command == [
+        "ffmpeg",
+        "-y",
+        "-i",
+        "session.mkv",
+        "-vn",
+        "-ac",
+        "1",
+        "-ar",
+        "16000",
+        "audio.wav",
+    ]
+
+
+def test_build_extract_audio_command_maps_one_specific_stream():
+    command = _build_extract_audio_command(
+        Path("session.mkv"),
+        Path("audio.wav"),
+        AudioConfig(sample_rate=16000, stream_indices=[2]),
+    )
+
+    assert command == [
+        "ffmpeg",
+        "-y",
+        "-i",
+        "session.mkv",
+        "-map",
+        "0:a:2",
+        "-vn",
+        "-ac",
+        "1",
+        "-ar",
+        "16000",
+        "audio.wav",
+    ]
+
+
+def test_build_extract_audio_command_mixes_multiple_streams():
+    command = _build_extract_audio_command(
+        Path("session.mkv"),
+        Path("audio.wav"),
+        AudioConfig(sample_rate=16000, stream_indices=[1, 2]),
+    )
+
+    assert command == [
+        "ffmpeg",
+        "-y",
+        "-i",
+        "session.mkv",
+        "-filter_complex",
+        "[0:a:1][0:a:2]amix=inputs=2:normalize=0[aout]",
+        "-map",
+        "[aout]",
+        "-vn",
+        "-ac",
+        "1",
+        "-ar",
+        "16000",
+        "audio.wav",
+    ]
