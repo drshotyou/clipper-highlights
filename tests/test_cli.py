@@ -25,13 +25,16 @@ def test_run_command_uses_default_output_dir_and_keyword_overrides(monkeypatch, 
     input_video.write_text("video")
     captured = {}
 
-    def fake_run_pipeline(video_path, output_dir, config, *, game, export_enabled, force):
+    def fake_run_pipeline(video_path, output_dir, config, *, game, export_enabled, force, progress_callback=None):
         captured["video_path"] = video_path
         captured["output_dir"] = output_dir
         captured["config"] = config
         captured["game"] = game
         captured["export_enabled"] = export_enabled
         captured["force"] = force
+        captured["progress_callback"] = progress_callback
+        if progress_callback is not None:
+            progress_callback("Mock progress message")
         return PipelineResult(
             run_dir=output_dir,
             artifact_dir=output_dir / "artifacts",
@@ -68,6 +71,9 @@ def test_run_command_uses_default_output_dir_and_keyword_overrides(monkeypatch, 
     assert captured["game"] == "tarkov"
     assert captured["export_enabled"] is False
     assert captured["force"] is True
+    assert callable(captured["progress_callback"])
     assert captured["config"].llm.provider == "none"
     assert captured["config"].candidate.keywords["pmc"] == 4.5
     assert "Ranked clips" in result.stdout
+    assert "Starting" in result.stdout
+    assert "Mock progress message" in result.stdout

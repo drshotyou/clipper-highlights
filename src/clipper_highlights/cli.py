@@ -53,6 +53,8 @@ def run(
     _apply_keyword_overrides(config, keyword or [])
 
     run_dir = output_dir or Path("runs") / input_video.stem
+    console.print(f"[bold cyan]Starting[/bold cyan] {input_video}")
+    console.print(f"[cyan]Output directory:[/cyan] {run_dir}")
     result = run_pipeline(
         input_video,
         run_dir,
@@ -60,6 +62,7 @@ def run(
         game=game,
         export_enabled=not no_export,
         force=force,
+        progress_callback=lambda message: console.print(f"[dim][progress][/dim] {message}"),
     )
 
     summary = Table(title="Clipper Highlights")

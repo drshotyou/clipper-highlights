@@ -1,17 +1,24 @@
 from __future__ import annotations
 
 from pathlib import Path
+from typing import Callable
 
 from clipper_highlights.config import TranscriptionConfig
 from clipper_highlights.models import TranscriptSegment, WordSegment
 
 
-def transcribe_audio(audio_path: Path, config: TranscriptionConfig) -> list[TranscriptSegment]:
+def transcribe_audio(
+    audio_path: Path,
+    config: TranscriptionConfig,
+    progress_callback: Callable[[str], None] | None = None,
+) -> list[TranscriptSegment]:
     from faster_whisper import WhisperModel
 
+    device = _resolve_device(config.device)
+    _emit(progress_callback, f"Loading Whisper model '{config.model}' on device '{device}'")
     model = WhisperModel(
         config.model,
-        device=_resolve_device(config.device),
+        device=device,
         compute_type=config.compute_type,
     )
 
@@ -23,6 +30,7 @@ def transcribe_audio(audio_path: Path, config: TranscriptionConfig) -> list[Tran
         else:
             initial_prompt = f"Key vocabulary: {hotword_prompt}"
 
+    _emit(progress_callback, "Starting transcription")
     segments, _ = model.transcribe(
         str(audio_path),
         language=config.language,
@@ -34,6 +42,7 @@ def transcribe_audio(audio_path: Path, config: TranscriptionConfig) -> list[Tran
     )
 
     transcript: list[TranscriptSegment] = []
+    last_reported_second = 0.0
     for segment in segments:
         words = [
             WordSegment(
@@ -57,6 +66,14 @@ def transcribe_audio(audio_path: Path, config: TranscriptionConfig) -> list[Tran
                 words=words,
             )
         )
+        current_second = float(segment.end)
+        if len(transcript) == 1 or current_second - last_reported_second >= 30.0:
+            _emit(
+                progress_callback,
+                f"Transcribed {len(transcript)} segments through {current_second:.1f}s of audio",
+            )
+            last_reported_second = current_second
+    _emit(progress_callback, f"Transcription complete: {len(transcript)} segments")
     return transcript
 
 
@@ -73,3 +90,8 @@ def _resolve_device(requested: str) -> str:
         pass
 
     return "cpu"
+
+
+def _emit(progress_callback: Callable[[str], None] | None, message: str) -> None:
+    if progress_callback is not None:
+        progress_callback(message)

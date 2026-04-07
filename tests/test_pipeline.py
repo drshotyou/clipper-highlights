@@ -20,7 +20,10 @@ def test_run_pipeline_writes_artifacts_and_exports(monkeypatch, tmp_path):
         return output
 
     monkeypatch.setattr("clipper_highlights.pipeline.extract_audio", fake_extract)
-    monkeypatch.setattr("clipper_highlights.pipeline.transcribe_audio", lambda audio, config: transcript)
+    monkeypatch.setattr(
+        "clipper_highlights.pipeline.transcribe_audio",
+        lambda audio, config, progress_callback=None: transcript,
+    )
     monkeypatch.setattr("clipper_highlights.pipeline.analyze_audio", lambda audio, config: spikes)
     monkeypatch.setattr("clipper_highlights.pipeline.generate_candidate_windows", lambda *args: candidates)
     monkeypatch.setattr("clipper_highlights.pipeline.rank_candidates", lambda bundle, config: ranked)
@@ -29,12 +32,22 @@ def test_run_pipeline_writes_artifacts_and_exports(monkeypatch, tmp_path):
         lambda video, clips, output_dir, config: [output_dir / "01_fight.mp4"],
     )
 
-    result = run_pipeline(video_path, tmp_path / "run", ProjectConfig(), game="tarkov")
+    messages = []
+    result = run_pipeline(
+        video_path,
+        tmp_path / "run",
+        ProjectConfig(),
+        game="tarkov",
+        progress_callback=messages.append,
+    )
 
     assert result.exported_paths == [tmp_path / "run" / "clips" / "01_fight.mp4"]
     assert (tmp_path / "run" / "artifacts" / "audio.wav").exists()
     assert json.loads((tmp_path / "run" / "artifacts" / "transcript.json").read_text())[0]["text"] == "pmc on me"
     assert json.loads((tmp_path / "run" / "artifacts" / "ranked_clips.json").read_text())[0]["title"] == "fight"
+    assert any("Extracting audio" in message for message in messages)
+    assert any("Generated 1 candidate windows" in message for message in messages)
+    assert any("Export complete" in message for message in messages)
 
 
 def test_run_pipeline_uses_cached_artifacts_without_force(monkeypatch, tmp_path):
